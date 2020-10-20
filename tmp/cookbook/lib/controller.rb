@@ -1,5 +1,9 @@
 require_relative 'view'
 require_relative 'recipe'
+require_relative 'scrape_all_recipes_service'
+
+# require open-uri and nokogiri for scraping
+require 'pry-byebug'
 
 class Controller
   # We dont require_relative for cookbook because we are already passing the instance
@@ -20,8 +24,15 @@ class Controller
     name = @view.ask_for_recipe('name')
     # Ask the description of the recipe to the user in the view
     description = @view.ask_for_recipe('description')
+
+    # New: Ask for recipe rating
+    rating = @view.ask_for_recipe('rating')
+
+    # New: Ask for recipe prep_time
+    prep_time = @view.ask_for_recipe('prep time')
+
     # Create an instance of recipe
-    recipe = Recipe.new(name, description)
+    recipe = Recipe.new(name, description, rating, prep_time)
     # Store the instance of recipe in the cookbook
     @cookbook.add_recipe(recipe)
   end
@@ -36,15 +47,31 @@ class Controller
   end
 
   def import_recipe
-    # Use the base url to search: https://dev.to/search?q=INTERPOLATION
-    # Ask the user for what recipe to search for - VIEW
-    # Interpolate the search query from the user in the url https://dev.to/search?q=#{user_query}
-    # require open-uri and nokogiri
-    # Use open-uri and nokogiri to parse the HTML website and store in a variable
-    # To create a recipe we need the title and description - GET THEM FROM THE PARSED_HTML
-    # for all of the results get the title and description
-    # Create a recipe (without saving to the repo yet) with the title and description
+    # Ask the user for what ingredient to search for - VIEW
+    ingredient = @view.ask_for_recipe('ingredient')
+    # Use the base url to search:
+    # Interpolate the search query from the user in the url:
+    # Use open-uri and nokogiri to parse the HTML website and store in a variable - First 5 recipes
+    found_recipes = ScrapeAllRecipesService.new(ingredient).call
+
+    # display the found recipes
+    @view.display(found_recipes)
+
     # ask the user which recipe to save (ask for number ) and store in variable
+    index = @view.ask_for_recipe_number
+
+    selected_recipe = found_recipes[index]
     # Send  the selected recipe to the recipes repository (save)
+    @cookbook.add_recipe(selected_recipe)
+  end
+
+  def mark_as_done
+    # list the recipes
+    list
+    # ask for recipe index to mark
+    index = @view.ask_for_recipe_number
+
+    # mark recipe as done
+    @cookbook.mark_recipe_as_done(index)
   end
 end
